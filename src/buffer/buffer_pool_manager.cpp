@@ -38,6 +38,7 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
 
 BufferPoolManager::~BufferPoolManager() { delete[] pages_; }
 
+// 3333333333333
 auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * { return nullptr; }
 
 auto BufferPoolManager::FetchPage(page_id_t page_id, [[maybe_unused]] AccessType access_type) -> Page * {
