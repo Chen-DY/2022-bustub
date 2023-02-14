@@ -12,8 +12,10 @@
 
 #pragma once
 
+#include <cstddef>
 #include <limits>
 #include <list>
+#include <memory>
 #include <mutex>  // NOLINT
 #include <unordered_map>
 #include <vector>
@@ -132,6 +134,12 @@ class LRUKReplacer {
    */
   auto Size() -> size_t;
 
+  struct FrameInfo {
+    frame_id_t frame_id_;
+    size_t k_distance_;
+    bool is_evictable_;
+  };
+
  private:
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
@@ -139,6 +147,12 @@ class LRUKReplacer {
   [[maybe_unused]] size_t curr_size_{0};
   [[maybe_unused]] size_t replacer_size_;
   [[maybe_unused]] size_t k_;
+  // 当命中次数没有到达k次时，存入这个队列
+  std::list<std::unique_ptr<FrameInfo>> history_list_;
+  // 当命中次数到达k次时，存入这个队列
+  std::list<std::unique_ptr<FrameInfo>> cache_list_;
+  std::unordered_map<frame_id_t, std::list<std::unique_ptr<FrameInfo>>::iterator> frame_map_;
+
   std::mutex latch_;
 };
 
