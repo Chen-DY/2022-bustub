@@ -28,8 +28,8 @@ namespace bustub {
 template <typename K, typename V>
 ExtendibleHashTable<K, V>::ExtendibleHashTable(size_t bucket_size)
     : global_depth_(0), bucket_size_(bucket_size), num_buckets_(1) {
-      dir_.push_back(std::make_shared<Bucket>(bucket_size, 0));
-    }
+  dir_.push_back(std::make_shared<Bucket>(bucket_size, 0));
+}
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::IndexOf(const K &key) -> size_t {
@@ -85,20 +85,20 @@ auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
 }
 
 /**
-   *
-   * TODO(P1): Add implementation
-   *
-   * @brief Insert the given key-value pair into the hash table.
-   * If a key already exists, the value should be updated.
-   * If the bucket is full and can't be inserted, do the following steps before retrying:
-   *    1. If the local depth of the bucket is equal to the global depth,
-   *        increment the global depth and double the size of the directory.
-   *    2. Increment the local depth of the bucket.
-   *    3. Split the bucket and redistribute directory pointers & the kv pairs in the bucket.
-   *
-   * @param key The key to be inserted.
-   * @param value The value to be inserted.
-   */
+ *
+ * TODO(P1): Add implementation
+ *
+ * @brief Insert the given key-value pair into the hash table.
+ * If a key already exists, the value should be updated.
+ * If the bucket is full and can't be inserted, do the following steps before retrying:
+ *    1. If the local depth of the bucket is equal to the global depth,
+ *        increment the global depth and double the size of the directory.
+ *    2. Increment the local depth of the bucket.
+ *    3. Split the bucket and redistribute directory pointers & the kv pairs in the bucket.
+ *
+ * @param key The key to be inserted.
+ * @param value The value to be inserted.
+ */
 template <typename K, typename V>
 void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
   std::lock_guard<std::mutex> guard(latch_);
@@ -118,7 +118,7 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
       size_t capacity = dir_.size() << 1;
       dir_.resize(capacity);
       // 将扩容出来的目录项暂时指向旧桶
-      for (size_t i = capacity / 2; i < dir_.size(); i++) {  
+      for (size_t i = capacity / 2; i < dir_.size(); i++) {
         dir_[i] = dir_[i - capacity / 2];
       }
     }
@@ -145,7 +145,7 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
     //     }
     // }
 
-     int mask = 1 << GetLocalDepthInternal(dir_index);
+    int mask = 1 << GetLocalDepthInternal(dir_index);
     // 逻辑上是要把一部分元素移除旧桶,实际操作上是开两个新桶
     auto zero_bucket = std::make_shared<Bucket>(bucket_size_, GetLocalDepthInternal(dir_index) + 1);
     auto one_bucket = std::make_shared<Bucket>(bucket_size_, GetLocalDepthInternal(dir_index) + 1);
@@ -162,7 +162,7 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
     // 重置目录指针
     // mask = 1 << (global_depth_ - 1);
     for (size_t i = 0; i < dir_.size(); i++) {
-      if (dir_[i] == old_bucket) { 
+      if (dir_[i] == old_bucket) {
         if ((i & mask) == 0U) {
           dir_[i] = zero_bucket;
           // dir_[i] = old_bucket;
@@ -172,11 +172,8 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
         }
       }
     }
-
   }
-    
   dir_[IndexOf(key)]->Insert(key, value);
-
 }
 
 //===--------------------------------------------------------------------===//
@@ -197,7 +194,7 @@ auto ExtendibleHashTable<K, V>::Bucket::Find(const K &key, V &value) -> bool {
   // }
   // return false;
   // 第二种
-  return std::any_of(list_.begin(), list_.end(), [&](std::pair<K, V>p){
+  return std::any_of(list_.begin(), list_.end(), [&](std::pair<K, V> p) {
     if (p.first == key) {
       value = p.second;
       return true;
@@ -209,7 +206,7 @@ auto ExtendibleHashTable<K, V>::Bucket::Find(const K &key, V &value) -> bool {
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Remove(const K &key) -> bool {
   typename std::list<std::pair<K, V>>::iterator iter;
-  return std::any_of(list_.begin(), list_.end(), [&](std::pair<K, V>p){
+  return std::any_of(list_.begin(), list_.end(), [&](std::pair<K, V> p) {
     if (p.first == key) {
       list_.remove(p);
       // std::cout << this->Find(p.first, p.second) << std::endl;
@@ -226,7 +223,7 @@ auto ExtendibleHashTable<K, V>::Bucket::Insert(const K &key, const V &value) -> 
     return false;
   }
   // 桶中有相同的key，更新value
-  typename std::list<std::pair<K,V>>::iterator iter;
+  typename std::list<std::pair<K, V>>::iterator iter;
   for (iter = list_.begin(); iter != list_.end(); ++iter) {
     if (iter->first == key) {
       iter->second = value;
