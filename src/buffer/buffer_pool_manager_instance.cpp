@@ -52,7 +52,7 @@ auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * {
   if (free_list_.empty() && replacer_->Size() == 0) {
     return nullptr;
   }
-  // 先找free_list中的可替换的页，再从replacer中找
+  // 先找free_list中的可替换的页，再从replacer中找 2222
   frame_id_t evict_frame_id;
   if (free_list_.empty()) {
     if (!replacer_->Evict(&evict_frame_id)) {
