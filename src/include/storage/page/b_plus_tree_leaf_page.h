@@ -50,6 +50,9 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   void SetNextPageId(page_id_t next_page_id);
   auto KeyAt(int index) const -> KeyType;
 
+  auto LookUp(const KeyType &key, ValueType &value, KeyComparator comparator) -> bool;
+  auto MovaHalfTo(BPlusTreeLeafPage *new_page, BufferPoolManager *bpm) ->void;
+
  private:
   page_id_t next_page_id_;
   // Flexible array member for page data.

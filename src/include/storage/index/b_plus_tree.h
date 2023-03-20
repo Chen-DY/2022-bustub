@@ -45,6 +45,9 @@ class BPlusTree {
   // Returns true if this B+ tree has no keys and values.
   auto IsEmpty() const -> bool;
 
+  // 增加辅助函数，查找叶子结点页
+  auto FindLeave(const page_id_t page_id) const -> page_id_t;
+
   // Insert a key-value pair into this B+ tree.
   auto Insert(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr) -> bool;
 
