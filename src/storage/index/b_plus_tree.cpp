@@ -23,21 +23,22 @@ BPLUSTREE_TYPE::BPlusTree(std::string name, BufferPoolManager *buffer_pool_manag
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::IsEmpty() const -> bool { return root_page_id_ == INVALID_PAGE_ID; }
 
-// INDEX_TEMPLATE_ARGUMENTS
-// auto BPLUSTREE_TYPE::FindLeave(const page_id_t page_id) const -> page_id_t{
-//   // 找到根结点,然后将page强转为BPlusTreePage类型
-//   Page *page = buffer_pool_manager_->FetchPage(root_page_id_);
-//   BPlusTreePage *root_page = reinterpret_cast<BPlusTreePage*>(page->GetData());
+INDEX_TEMPLATE_ARGUMENTS
+auto BPLUSTREE_TYPE::FindLeave(const KeyType &key) const -> Page *{
+  // 找到根结点,然后将page强转为BPlusTreePage类型
+  Page *page = buffer_pool_manager_->FetchPage(root_page_id_);
+  BPlusTreePage *root_page = reinterpret_cast<BPlusTreePage*>(page->GetData());
 
-//   while (!root_page->IsLeafPage()) {
-//     // 注意这里是InternalPage，不是BPlusTreeInternalPage
-//     InternalPage *internal_page = reinterpret_cast<InternalPage*>(page->GetData);
-    
-
-//   }
-
-//   return nullptr;
-// }
+  while (!root_page->IsLeafPage()) {
+    // 注意这里是InternalPage，不是BPlusTreeInternalPage
+    InternalPage *internal_page = reinterpret_cast<InternalPage*>(page->GetData());
+    auto child_page_id = internal_page->LookUp(key, comparator_);
+    page = buffer_pool_manager_->FetchPage(child_page_id);
+    root_page = reinterpret_cast<BPlusTreePage *>(page->GetData());
+  }
+  // 这里没有unpinPage，需要在调用后unpin
+  return page;
+}
 /*****************************************************************************
  * SEARCH
  *****************************************************************************/
@@ -48,7 +49,16 @@ auto BPLUSTREE_TYPE::IsEmpty() const -> bool { return root_page_id_ == INVALID_P
  */
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) -> bool {
-  return false;
+  bool is_reslut = false;
+  Page* page = FindLeave(key);
+  LeafPage *leaf_page = reinterpret_cast<LeafPage *>(page->GetData());
+  ValueType value;
+  is_reslut = leaf_page->LookUp(key, value, comparator_);
+  buffer_pool_manager_->UnpinPage(page->GetPageId(), false);
+  if (is_reslut) {
+    result->emplace_back(value);
+  }
+  return is_reslut;
 }
 
 /*****************************************************************************
@@ -63,8 +73,52 @@ auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
  */
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) -> bool {
+  // 当前b+树为空
+  if (IsEmpty()) {
+    StartNewTree(key, value);
+    return true;
+  }
+  Page *page = FindLeave(key);
+  LeafPage* leaf_page = reinterpret_cast<LeafPage*>(page->GetData());
+
+  // 如果存在相同的key，就不用插入直接返回false
+  ValueType val;
+  if (leaf_page->LookUp(key, val, comparator_)) {
+    buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
+    return false;
+  }
+
+  // 叶子结点没满，正常插入，返回就行
+  leaf_page->Insert(key, value, comparator_);
+  int now_leaf_size = leaf_page->GetSize();
+  if (now_leaf_size < leaf_max_size_) {
+    buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
+    return true;
+  }
+
+  // 叶子结点满了，需要split
+
   return false;
 }
+
+/**
+ * 插入时，B+树为空。
+ * 创建根节点，并插入值
+*/
+INDEX_TEMPLATE_ARGUMENTS
+auto BPLUSTREE_TYPE::StartNewTree(const KeyType &key,const ValueType &value) -> void {
+  // page_id_t root_page_id;
+  Page *page = buffer_pool_manager_->NewPage(&root_page_id_);
+  LeafPage* root_page = reinterpret_cast<LeafPage*>(page->GetData());
+
+  root_page->Init(root_page_id_, INVALID_PAGE_ID, leaf_max_size_);
+  root_page->Insert(key, value, comparator_);
+  UpdateRootPageId(1);
+  buffer_pool_manager_->UnpinPage(root_page_id_, false);
+}
+
+
+
 
 /*****************************************************************************
  * REMOVE

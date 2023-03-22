@@ -48,14 +48,14 @@ void BPlusTreePage::SetMaxSize(int size) {
  * Generally, min page size == max page size / 2
  */
 auto BPlusTreePage::GetMinSize() const -> int { 
-    if (page_type_ == IndexPageType::LEAF_PAGE) {
-        return (max_size_ - 1) / 2;
-    }
-    if (page_type_ == IndexPageType::INTERNAL_PAGE) {
-        return max_size_ / 2;
-    }
+    // if (page_type_ == IndexPageType::LEAF_PAGE) {
+    //     return (max_size_ - 1) / 2;
+    // }
+    // if (page_type_ == IndexPageType::INTERNAL_PAGE) {
+    //     return max_size_ / 2;
+    // }
     // 该返回啥
-    return 0;
+    return page_type_ == IndexPageType::LEAF_PAGE ? (max_size_ - 1) / 2 : (max_size_ / 2);
 }
 
 /*

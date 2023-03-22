@@ -97,17 +97,38 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::MovaHalfTo(BPlusTreeLeafPage *new_page, BufferP
     new_page->array_[i - half_size].second = array_[i].second;
   }
   new_page->SetNextPageId(GetNextPageId());
-  SetNextPageId(new_page->GetPageId);
+  SetNextPageId(new_page->GetPageId());
 
   new_page->SetSize(now_size - half_size);
   SetSize(half_size);
 }
 
-// INDEX_TEMPLATE_ARGUMENTS
-// auto MovaHalfTo(BPlusTreeInternalPage *new_page, BufferPoolManager *bpm) ->void{
-  
-// }
-
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key,const ValueType &value, KeyComparator comparator) -> void {
+  // 在叶结点中找到插入的位置
+  int locate = 0;
+  int l = 0;
+  int r = GetSize() - 1;
+  int mid = (l + r) / 2;
+  while (l < r) {
+    if (comparator(array_[mid].first, key) < 0) {
+      l = mid + 1;
+    }
+    if (comparator(array_[mid].first, key) > 0) {
+      r = mid - 1;
+    }
+  }
+  // 记录位置，key大于locate的全部后移一位
+  locate = l;
+  for (int i = GetSize() - 1; i >= locate; --i) {
+    array_[i + 1].first = array_[i].first;
+    array_[i + 1].second = array_[i].second;
+  }
+  // 插入数据
+  array_[locate].first = key;
+  array_[locate].second = value;
+  IncreaseSize(1);
+}
 
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
 template class BPlusTreeLeafPage<GenericKey<8>, RID, GenericComparator<8>>;
