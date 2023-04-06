@@ -56,31 +56,47 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType {
   return array_[index].second;
 }
 
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetValueAt(int index, const ValueType &value) {
+  array_[index].second = value;
+}
+
 /**
  * 在internal_page中找到最接近key的,返回page_id
 */
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::LookUp(const KeyType &key, KeyComparator comparator) const -> ValueType {
-   int l = 0;
-   int r = this->GetSize() - 1;
-   int mid = (l + r) / 2;
+  //  int l = 0;
+  //  int r = this->GetSize() - 1;
+  //  int mid = (l + r) / 2;
 
-   while (l < r) {
-    // 相等：0； 小于：-1；大于：1
-    if (comparator(array_[mid].first, key) <= 0) {
-      l = mid;
-    } else {
-      r = mid;
-    }
-   }
-   return array_[l].second;
+  //  while (l < r) {
+  //   mid = (l + r) / 2;
+  //   // 相等：0； 小于：-1；大于：1
+  //   if (comparator(array_[mid].first, key) <= 0) {
+  //     l = mid + 1;
+  //   } else {
+  //     r = mid - 1;
+  //   }
+  //  }
+  //  return array_[l].second;
+  auto target = std::lower_bound(array_ + 1, array_ + GetSize(), key, [&comparator](const auto &pair1, auto key) {
+    return comparator(pair1.first, key) < 0;
+  });
+  if (target == array_ + GetSize()) {
+    return ValueAt(GetSize() - 1);
+  }
+  if (comparator(target->first, key) == 0) {
+    return target->second;
+  }
+  return std::prev(target)->second;
 }
 
 /**
  * 当split时需要调用。将页面的后一半分配个另一个页面。
 */
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::MovaHalfTo(BPlusTreeInternalPage *new_page, BufferPoolManager *bpm) ->void {
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(BPlusTreeInternalPage *new_page, BufferPoolManager *bpm) ->void {
     int size = this->GetSize();
 
     int half_size = size / 2;
@@ -96,6 +112,28 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::MovaHalfTo(BPlusTreeInternalPage *new_page,
     }
     new_page->SetSize(size - half_size);
     this->SetSize(half_size);
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(page_id_t insert_page_id,const KeyType &insert_key, page_id_t old_page_id) {
+    // 找到index
+    // int index = 0;
+    // for (auto iter : array_) {
+    //   index++;
+    //   if (iter.second == old_page_id) {
+    //     break;
+    //   }
+    // }
+    // index++; // 找到插入的位置
+    ValueType value;
+    auto iter = std::find_if(array_, array_ + GetSize(), [&value](const auto &pair) {return pair.second == value;});
+    int index = std::distance(array_, iter);
+    // 调整位置，并插入
+    std::move_backward(array_ + index, array_ + GetSize(), array_ + GetSize() + 1);
+    std::cout << index<< "&&&&&&&&&&&&&&&&&&&&&&&" << std::endl;
+    IncreaseSize(1);
+    array_[index].first = insert_key;
+    array_[index].second = insert_page_id;
 }
 
 

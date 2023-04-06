@@ -45,12 +45,6 @@ class BPlusTree {
   // Returns true if this B+ tree has no keys and values.
   auto IsEmpty() const -> bool;
 
-  // 增加辅助函数，查找叶子结点页
-  auto FindLeave(const KeyType &key) const -> Page *;
-
-  // 插入时没有根结点时调用
-  auto StartNewTree(const KeyType &key,const ValueType &value) -> void;
-
   // Insert a key-value pair into this B+ tree.
   auto Insert(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr) -> bool;
 
@@ -62,6 +56,16 @@ class BPlusTree {
 
   // return the page id of the root node
   auto GetRootPageId() -> page_id_t;
+
+  // 增加辅助函数，查找叶子结点页
+  auto FindLeave(const KeyType &key) const -> Page *;
+
+  // 插入时没有根结点时调用
+  auto StartNewTree(const KeyType &key,const ValueType &value) -> void;
+
+  auto SplitPage(BPlusTreePage *page) -> BPlusTreePage *;
+
+  auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page,const KeyType &new_page_key) -> void;
 
   // index iterator
   auto Begin() -> INDEXITERATOR_TYPE;

@@ -51,7 +51,7 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   auto KeyAt(int index) const -> KeyType;
 
   auto LookUp(const KeyType &key, ValueType &value, KeyComparator comparator) -> bool;
-  auto MovaHalfTo(BPlusTreeLeafPage *new_page, BufferPoolManager *bpm) ->void;
+  auto MoveHalfTo(BPlusTreeLeafPage *new_page) ->void;
   auto Insert(const KeyType &key,const ValueType &value, KeyComparator comparator) -> void;
 
  private:

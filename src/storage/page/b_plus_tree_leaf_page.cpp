@@ -65,30 +65,42 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const -> KeyType {
 */
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_LEAF_PAGE_TYPE::LookUp(const KeyType &key, ValueType &value, KeyComparator comparator) -> bool{
-  int l = 0;
-  int r = this->GetSize() - 1;
-  int mid = (l + r) / 2;
+  // int l = 0;
+  // int r = this->GetSize() - 1;
+  // int mid = (l + r) / 2;
 
-  while (l < r) {
-    if (comparator(array_[mid].first, key) == 0) {
-      value = array_[mid].second;
-      return true;
-    }
-    if (comparator(array_[mid].first, key) < 0) {
-      l = mid + 1;
-    }
-    if (comparator(array_[mid].first, key) > 0) {
-      r = mid - 1;
-    }
+  // while (l <= r) {
+  //   mid = (l + r) / 2;
+  //   if (comparator(array_[mid].first, key) == 0) {
+  //     value = array_[mid].second;
+  //     std::cout << "->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << value << std::endl;
+  //     return true;
+  //   }
+  //   if (comparator(array_[mid].first, key) < 0) {
+  //     l = mid + 1;
+  //   }
+  //   if (comparator(array_[mid].first, key) > 0) {
+  //     r = mid - 1;
+  //   }
+  // }
+  // std::cout << "->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << value << std::endl;
+  // return false;
+  auto iter = std::lower_bound(array_, array_ + GetSize(), key,
+                               [&comparator](const auto &pair1, auto key) { return comparator(pair1.first, key) < 0; });
+  auto index = std::distance(array_, iter);
+  if (index == GetSize() || comparator(KeyAt(index), key) != 0) {
+    return false;
   }
-  return false;
+  value = array_[index].second;
+  std::cout << "->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << value << std::endl;
+  return true;
 }
 
 /**
  * 在split中调用。叶结点满了只有，分出一般到一个新结点
 */
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_LEAF_PAGE_TYPE::MovaHalfTo(BPlusTreeLeafPage *new_page, BufferPoolManager *bpm) ->void{
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *new_page) ->void{
   int now_size = GetSize();
   int half_size = now_size / 2;
 
@@ -110,7 +122,8 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key,const ValueType &valu
   int l = 0;
   int r = GetSize() - 1;
   int mid = (l + r) / 2;
-  while (l < r) {
+  while (l <= r) {
+    mid = (l + r) / 2; 
     if (comparator(array_[mid].first, key) < 0) {
       l = mid + 1;
     }

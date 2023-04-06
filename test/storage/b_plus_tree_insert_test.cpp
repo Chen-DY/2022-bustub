@@ -20,7 +20,7 @@
 
 namespace bustub {
 
-TEST(BPlusTreeTests, DISABLED_InsertTest1) {
+TEST(BPlusTreeTests, InsertTest1) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -64,7 +64,7 @@ TEST(BPlusTreeTests, DISABLED_InsertTest1) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_InsertTest2) {
+TEST(BPlusTreeTests, InsertTest2) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -86,10 +86,16 @@ TEST(BPlusTreeTests, DISABLED_InsertTest2) {
   std::vector<int64_t> keys = {1, 2, 3, 4, 5};
   for (auto key : keys) {
     int64_t value = key & 0xFFFFFFFF;
+    // std::cout << value << "**********" << key << std::endl;
     rid.Set(static_cast<int32_t>(key >> 32), value);
     index_key.SetFromInteger(key);
     tree.Insert(index_key, rid, transaction);
+    // std::string outf = "/home/2022-bustub/build/mytree.dot";
+    // tree.Draw(bpm, outf);
+    tree.Print(bpm);
+    std::cout << "********************************************************" << std::endl;
   }
+  tree.Draw(bpm, "/home/2022-bustub/build/mytree.dot");
 
   std::vector<RID> rids;
   for (auto key : keys) {
@@ -169,6 +175,7 @@ TEST(BPlusTreeTests, DISABLED_InsertTest3) {
   int64_t start_key = 1;
   int64_t current_key = start_key;
   index_key.SetFromInteger(start_key);
+  // std::cout << (tree.Begin(index_key)) << std::endl;
   for (auto iterator = tree.Begin(index_key); iterator != tree.End(); ++iterator) {
     auto location = (*iterator).second;
     EXPECT_EQ(location.GetPageId(), 0);
