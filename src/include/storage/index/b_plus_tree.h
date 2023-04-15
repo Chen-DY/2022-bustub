@@ -45,6 +45,8 @@ class BPlusTree {
   // Returns true if this B+ tree has no keys and values.
   auto IsEmpty() const -> bool;
 
+  auto GetRootPageId() const -> page_id_t;
+
   // Insert a key-value pair into this B+ tree.
   auto Insert(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr) -> bool;
 
@@ -61,12 +63,21 @@ class BPlusTree {
   auto FindLeave(const KeyType &key) const -> Page *;
 
   // 插入时没有根结点时调用
-  auto StartNewTree(const KeyType &key,const ValueType &value) -> void;
+  auto StartNewTree(const KeyType &key, const ValueType &value) -> void;
 
   auto SplitPage(BPlusTreePage *page) -> BPlusTreePage *;
 
-  auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page,const KeyType &new_page_key) -> void;
+  auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page, const KeyType &new_page_key) -> void;
 
+  auto RedistributeOrMerge(BPlusTreePage *page) -> void;
+
+  auto RedistributeLeft(BPlusTreePage *left_sibling_page, BPlusTreePage *cur_page, InternalPage *parent_page, int index)
+      -> void;
+
+  auto RedistributeRight(BPlusTreePage *right_sibling_page, BPlusTreePage *cur_page, InternalPage *parent_page,
+                         int index) -> void;
+
+  auto Merge(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent, int index) -> void;
   // index iterator
   auto Begin() -> INDEXITERATOR_TYPE;
   auto Begin(const KeyType &key) -> INDEXITERATOR_TYPE;

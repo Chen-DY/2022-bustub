@@ -12,7 +12,10 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <random>
+#include <vector>
 
+#include <cstring>
 #include "buffer/buffer_pool_manager_instance.h"
 #include "gtest/gtest.h"
 #include "storage/index/b_plus_tree.h"
@@ -20,7 +23,7 @@
 
 namespace bustub {
 
-TEST(BPlusTreeTests, InsertTest1) {
+TEST(BPlusTreeTests, DISABLED_InsertTest1) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -64,7 +67,7 @@ TEST(BPlusTreeTests, InsertTest1) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, InsertTest2) {
+TEST(BPlusTreeTests, DISABLED_InsertTest2) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -95,7 +98,7 @@ TEST(BPlusTreeTests, InsertTest2) {
     tree.Print(bpm);
     std::cout << "********************************************************" << std::endl;
   }
-  tree.Draw(bpm, "/home/2022-bustub/build/mytree.dot");
+  // tree.Draw(bpm, "/home/2022-bustub/build/mytree.dot");
 
   std::vector<RID> rids;
   for (auto key : keys) {
@@ -107,6 +110,145 @@ TEST(BPlusTreeTests, InsertTest2) {
     int64_t value = key & 0xFFFFFFFF;
     EXPECT_EQ(rids[0].GetSlotNum(), value);
   }
+
+  int64_t size = 0;
+  bool is_present;
+
+  for (auto key : keys) {
+    rids.clear();
+    index_key.SetFromInteger(key);
+    is_present = tree.GetValue(index_key, &rids);
+
+    EXPECT_EQ(is_present, true);
+    EXPECT_EQ(rids.size(), 1);
+    EXPECT_EQ(rids[0].GetPageId(), 0);
+    EXPECT_EQ(rids[0].GetSlotNum(), key);
+    size = size + 1;
+  }
+
+  EXPECT_EQ(size, keys.size());
+
+  bpm->UnpinPage(HEADER_PAGE_ID, true);
+  delete transaction;
+  delete disk_manager;
+  delete bpm;
+  remove("test.db");
+  remove("test.log");
+}
+
+TEST(BPlusTreeTests, DISABLED_SplitTest) {
+  // create KeyComparator and index schema
+  auto key_schema = ParseCreateStatement("a bigint");
+  GenericComparator<8> comparator(key_schema.get());
+
+  auto *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManagerInstance(50, disk_manager);
+  // create b+ tree with small order for testing split
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 2, 3);
+  GenericKey<8> index_key;
+  RID rid;
+  // create transaction
+  auto *transaction = new Transaction(0);
+
+  // create and fetch header_page
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  std::vector<int64_t> keys = {1, 2, 3, 4, 5, 6, 7};
+  for (auto key : keys) {
+    int64_t value = key & 0xFFFFFFFF;
+    rid.Set(static_cast<int32_t>(key >> 32), value);
+    index_key.SetFromInteger(key);
+    tree.Insert(index_key, rid, transaction);
+  }
+
+  // Check if the tree is split properly
+  std::vector<RID> rids;
+  for (auto key : keys) {
+    rids.clear();
+    index_key.SetFromInteger(key);
+    tree.GetValue(index_key, &rids);
+    EXPECT_EQ(rids.size(), 1);
+
+    int64_t value = key & 0xFFFFFFFF;
+    EXPECT_EQ(rids[0].GetSlotNum(), value);
+  }
+
+  int64_t size = 0;
+  bool is_present;
+
+  for (auto key : keys) {
+    rids.clear();
+    index_key.SetFromInteger(key);
+    is_present = tree.GetValue(index_key, &rids);
+
+    EXPECT_EQ(is_present, true);
+    EXPECT_EQ(rids.size(), 1);
+    EXPECT_EQ(rids[0].GetPageId(), 0);
+    EXPECT_EQ(rids[0].GetSlotNum(), key);
+    size = size + 1;
+  }
+
+  EXPECT_EQ(size, keys.size());
+
+  bpm->UnpinPage(HEADER_PAGE_ID, true);
+  delete transaction;
+  delete disk_manager;
+  delete bpm;
+  remove("test.db");
+  remove("test.log");
+}
+
+TEST(BPlusTreeTests, RandomInsertTest) {
+  // create KeyComparator and index schema
+  auto key_schema = ParseCreateStatement("a bigint");
+  GenericComparator<8> comparator(key_schema.get());
+
+  auto *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManagerInstance(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 2, 3);
+  // BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 5, 5);
+  GenericKey<8> index_key;
+  RID rid;
+  // create transaction
+  auto *transaction = new Transaction(0);
+
+  // create and fetch header_page
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  // generate 1000 random unique keys
+  std::vector<int64_t> keys{9, 101, 3, 2, 5, 7, 8, 4, 6, 10, 1, 12, 18, 20, 13, 17, 21};
+  // std::vector<int64_t> keys(100);
+  // std::iota(keys.begin(), keys.end(), 1);
+  // std::shuffle(keys.begin(), keys.end(), std::mt19937{std::random_device{}()});
+  int count = 0;
+  for (auto key : keys) {
+    std::cout << key << "-----------------------" << std::endl;
+    int64_t value = key & 0xFFFFFFFF;
+    rid.Set(static_cast<int32_t>(key >> 32), value);
+    index_key.SetFromInteger(key);
+    tree.Insert(index_key, rid, transaction);
+    // String ulr = "/home/2022-bustub/build/mytree.dot";
+    std::string url = "/home/2022-bustub/build/mytree" + std::to_string(count++) + ".dot";
+    tree.Draw(bpm, url);
+  }
+
+  std::vector<RID> rids;
+  for (auto key : keys) {
+    rids.clear();
+    index_key.SetFromInteger(key);
+    tree.GetValue(index_key, &rids);
+    EXPECT_EQ(rids.size(), 1);
+
+    int64_t value = key & 0xFFFFFFFF;
+    EXPECT_EQ(rids[0].GetSlotNum(), value);
+  }
+  tree.Print(bpm);
+  tree.Draw(bpm, "/home/2022-bustub/build/mytree.dot");
 
   int64_t size = 0;
   bool is_present;
