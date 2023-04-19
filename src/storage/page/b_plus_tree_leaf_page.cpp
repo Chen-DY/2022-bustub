@@ -66,6 +66,9 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::FindIndexByKey(const KeyType &key, KeyComparato
   return std::distance(array_, iter);
 }
 
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) const -> const MappingType & { return array_[index]; }
+
 /**
  * 在叶结点中找到key对应的value。
  */
