@@ -71,7 +71,7 @@ class BPlusTree {
 
   auto SplitPage(BPlusTreePage *page) -> BPlusTreePage *;
 
-  auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page, const KeyType &new_page_key) -> void;
+  auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page, const KeyType &new_page_key, Transaction *transaction) -> void;
 
   auto RedistributeOrMerge(BPlusTreePage *page) -> void;
 
@@ -83,6 +83,7 @@ class BPlusTree {
 
   auto Merge(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent, int index) -> void;
   
+  // 在遇到子结点为安全的结点之后，释放transaction中的所有锁
   auto ReleaseLatchFromQueue(Transaction *transaction) -> void;
   // index iterator
   auto Begin() -> INDEXITERATOR_TYPE;
