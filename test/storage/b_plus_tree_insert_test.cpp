@@ -32,9 +32,8 @@
   EXPECT_TRUE(futureResult.wait_for(std::chrono::milliseconds(X)) != std::future_status::timeout) \
       << "Test Failed Due to Time Out";
 
-
 namespace bustub {
-  // helper function to launch multiple threads
+// helper function to launch multiple threads
 template <typename... Args>
 void LaunchParallelTest(uint64_t num_threads, uint64_t txn_id_start, Args &&...args) {
   std::vector<std::thread> thread_group;
@@ -174,7 +173,7 @@ void InsertTest1Call() {
     for (auto iterator = tree.Begin(); iterator != tree.End(); ++iterator) {
       auto location = (*iterator).second;
       std::cout << "Current key: " << current_key << std::endl;
-    std::cout << "Page ID: " << location.GetPageId() << ", Slot Num: " << location.GetSlotNum() << std::endl;
+      std::cout << "Page ID: " << location.GetPageId() << ", Slot Num: " << location.GetSlotNum() << std::endl;
       EXPECT_EQ(location.GetPageId(), 0);
       EXPECT_EQ(location.GetSlotNum(), current_key);
       current_key = current_key + 1;
@@ -603,7 +602,7 @@ void MixTest4Call() {
  * Score: 5
  * Description: Concurrently insert a set of keys.
  */
-TEST(BPlusTreeTestC2Con, DISABLED_InsertTest1) {
+TEST(BPlusTreeTestC2Con, InsertTest1) {
   TEST_TIMEOUT_BEGIN
   InsertTest1Call();
   remove("test.db");
@@ -616,7 +615,7 @@ TEST(BPlusTreeTestC2Con, DISABLED_InsertTest1) {
  * Description: Split the concurrent insert test to multiple threads
  * without overlap.
  */
-TEST(BPlusTreeTestC2Con, DISABLED_InsertTest2) {
+TEST(BPlusTreeTestC2Con, InsertTest2) {
   TEST_TIMEOUT_BEGIN
   InsertTest2Call();
   remove("test.db");
@@ -628,7 +627,7 @@ TEST(BPlusTreeTestC2Con, DISABLED_InsertTest2) {
  * Score: 5
  * Description: Concurrently delete a set of keys.
  */
-TEST(BPlusTreeTestC2Con, DISABLED_DeleteTest1) {
+TEST(BPlusTreeTestC2Con, DeleteTest1) {
   TEST_TIMEOUT_BEGIN
   DeleteTest1Call();
   remove("test.db");
@@ -767,6 +766,7 @@ TEST(BPlusTreeTests, DISABLED_InsertTest2) {
   (void)header_page;
 
   std::vector<int64_t> keys = {1, 2, 3, 4, 5};
+  int count = 0;
   for (auto key : keys) {
     int64_t value = key & 0xFFFFFFFF;
     // std::cout << value << "**********" << key << std::endl;
@@ -775,10 +775,13 @@ TEST(BPlusTreeTests, DISABLED_InsertTest2) {
     tree.Insert(index_key, rid, transaction);
     // std::string outf = "/home/2022-bustub/build/mytree.dot";
     // tree.Draw(bpm, outf);
+
+    std::string url = "/home/2022-bustub/build/mytree" + std::to_string(++count) + ".dot";
+    tree.Draw(bpm, url);
     tree.Print(bpm);
     std::cout << "********************************************************" << std::endl;
   }
-  // tree.Draw(bpm, "/home/2022-bustub/build/mytree.dot");
+  tree.Draw(bpm, "/home/2022-bustub/build/mytree.dot");
 
   std::vector<RID> rids;
   for (auto key : keys) {
@@ -955,7 +958,7 @@ TEST(BPlusTreeTests, DISABLED_RandomInsertTest) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, InsertTest3) {
+TEST(BPlusTreeTests, DISABLED_InsertTest3) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());

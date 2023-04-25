@@ -106,7 +106,7 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::LookUp(const KeyType &key, ValueType &value, Ke
 }
 
 /**
- * 在split中调用。叶结点满了只有，分出一般到一个新结点
+ * 在split中调用。叶结点满了，分出一半到一个新结点
  */
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *new_page) -> void {

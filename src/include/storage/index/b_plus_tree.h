@@ -71,7 +71,8 @@ class BPlusTree {
 
   auto SplitPage(BPlusTreePage *page) -> BPlusTreePage *;
 
-  auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page, const KeyType &new_page_key, Transaction *transaction) -> void;
+  auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page, const KeyType &new_page_key,
+                      Transaction *transaction) -> void;
 
   auto RedistributeOrMerge(BPlusTreePage *page) -> void;
 
@@ -82,7 +83,7 @@ class BPlusTree {
                          int index) -> void;
 
   auto Merge(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent, int index) -> void;
-  
+
   // 在遇到子结点为安全的结点之后，释放transaction中的所有锁
   auto ReleaseLatchFromQueue(Transaction *transaction) -> void;
   // index iterator
@@ -117,7 +118,7 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
-  ReaderWriterLatch root_page_latch_;
+  ReaderWriterLatch root_page_id_latch_;
 };
 
 }  // namespace bustub
