@@ -159,7 +159,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(page_id_t insert_page_id, c
   // array_[index].first = insert_key;
   // array_[index].second = insert_page_id;
   int index = FindIndexByValue(old_page_id) + 1;
-  std::cout << index << "&&&&&&&&&&&&&&&&&&&&&&&" << std::endl;
+  // std::cout << index << "&&&&&&&&&&&&&&&&&&&&&&&" << std::endl;
   std::move_backward(array_ + index, array_ + GetSize(), array_ + GetSize() + 1);
   IncreaseSize(1);
   array_[index].first = insert_key;

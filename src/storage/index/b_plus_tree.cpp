@@ -40,8 +40,7 @@ auto BPLUSTREE_TYPE::FindLeaf(const KeyType &key, Operation operation, Transacti
     if (operation == Operation::DELETE && cur_page->GetSize() > 2) {
       ReleaseLatchFromQueue(transaction);
     }
-    if (operation == Operation::INSERT && cur_page->IsLeafPage() && cur_page->GetSize() < cur_page->GetMaxSize() - 1)
-    {
+    if (operation == Operation::INSERT && cur_page->IsLeafPage() && cur_page->GetSize() < cur_page->GetMaxSize() - 1) {
       ReleaseLatchFromQueue(transaction);
     }
     if (operation == Operation::INSERT && !cur_page->IsLeafPage() && cur_page->GetSize() < cur_page->GetMaxSize()) {
@@ -282,11 +281,10 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   if (IsEmpty()) {
     return;
   }
-
   Page *page = FindLeave(key);
   auto *leaf_page = reinterpret_cast<LeafPage *>(page->GetData());
   bool is_remove = leaf_page->Remove(key, comparator_);
-  // 如果没有找到index，则直接删除
+  // 如果没有找到index，则直接返回
   if (!is_remove) {
     return;
   }
@@ -298,11 +296,27 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   // 不是正常删除，需要重新分配
   RedistributeOrMerge(leaf_page);
   buffer_pool_manager_->UnpinPage(page->GetPageId(), true);
+  std::cout << "remove" << std::endl;
+  Print(buffer_pool_manager_);
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::RedistributeOrMerge(BPlusTreePage *cur_page) {
   if (cur_page->IsRootPage()) {
+    if (cur_page->IsLeafPage() && cur_page->GetSize() == 0) {
+      root_page_id_ = INVALID_PAGE_ID;
+      return;
+    }
+    if (!cur_page->IsLeafPage() && cur_page->GetSize() == 1) {
+      // std::cout << "root_page_id_ = " << root_page_id_ << std::endl;
+      auto page = reinterpret_cast<InternalPage *>(cur_page);
+      root_page_id_ = page->ValueAt(0);
+      auto *root_page = reinterpret_cast<LeafPage *>(buffer_pool_manager_->FetchPage(root_page_id_)->GetData());
+      root_page->SetParentPageId(INVALID_PAGE_ID);
+      UpdateRootPageId(0);
+      buffer_pool_manager_->UnpinPage(root_page_id_, true);
+      return;
+    }
     return;
   }
   // 找到parent_page，并找到
