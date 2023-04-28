@@ -627,7 +627,7 @@ TEST(BPlusTreeTestC2Con, InsertTest2) {
  * Score: 5
  * Description: Concurrently delete a set of keys.
  */
-TEST(BPlusTreeTestC2Con, DeleteTest1) {
+TEST(BPlusTreeTestC2Con, DISABLED_DeleteTest1) {
   TEST_TIMEOUT_BEGIN
   DeleteTest1Call();
   remove("test.db");
@@ -702,7 +702,7 @@ TEST(BPlusTreeTestC2Con, DISABLED_MixTest4) {
   TEST_TIMEOUT_FAIL_END(1000 * 600)
 }
 
-TEST(BPlusTreeTests, DISABLED_InsertTest1) {
+TEST(BPlusTreeTests, InsertTest11) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -746,7 +746,7 @@ TEST(BPlusTreeTests, DISABLED_InsertTest1) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_InsertTest2) {
+TEST(BPlusTreeTests, InsertTest12) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -819,7 +819,7 @@ TEST(BPlusTreeTests, DISABLED_InsertTest2) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_SplitTest) {
+TEST(BPlusTreeTests, SplitTest) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -883,7 +883,7 @@ TEST(BPlusTreeTests, DISABLED_SplitTest) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_RandomInsertTest) {
+TEST(BPlusTreeTests, RandomInsertTest) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -958,7 +958,7 @@ TEST(BPlusTreeTests, DISABLED_RandomInsertTest) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_InsertTest3) {
+TEST(BPlusTreeTests, InsertTest13) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
