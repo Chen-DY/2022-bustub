@@ -72,9 +72,9 @@ class BPlusTree {
   auto SplitPage(BPlusTreePage *page) -> BPlusTreePage *;
 
   auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page, const KeyType &new_page_key,
-                      Transaction *transaction) -> void;
+                      Transaction *transaction = nullptr) -> void;
 
-  auto RedistributeOrMerge(BPlusTreePage *page) -> void;
+  auto RedistributeOrMerge(BPlusTreePage *page, Transaction *transaction = nullptr) -> void;
 
   auto RedistributeLeft(BPlusTreePage *left_sibling_page, BPlusTreePage *cur_page, InternalPage *parent_page, int index)
       -> void;
@@ -82,7 +82,7 @@ class BPlusTree {
   auto RedistributeRight(BPlusTreePage *right_sibling_page, BPlusTreePage *cur_page, InternalPage *parent_page,
                          int index) -> void;
 
-  auto Merge(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent, int index) -> void;
+  auto Merge(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent, int index, Transaction *transaction = nullptr) -> void;
 
   // 在遇到子结点为安全的结点之后，释放transaction中的所有锁
   auto ReleaseLatchFromQueue(Transaction *transaction) -> void;
