@@ -59,6 +59,7 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   auto MoveAllTo(BPlusTreeLeafPage *new_page) -> void;
   auto Insert(const KeyType &key, const ValueType &value, KeyComparator comparator) -> void;
   auto Remove(const KeyType &key, KeyComparator comparator) -> bool;
+  auto MoveLeftOneStep() -> void;
 
  private:
   page_id_t next_page_id_;

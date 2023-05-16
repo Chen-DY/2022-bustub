@@ -174,7 +174,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) {
 
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertToStart(const KeyType &key, const ValueType &value, BufferPoolManager *bpm) {
-  std::move_backward(array_, array_ + GetSize(), array_ + 1);
+  std::move_backward(array_, array_ + GetSize(), array_ + GetSize() + 1);
   array_[0] = {key, value};
   IncreaseSize(1);
   page_id_t page_id = value;

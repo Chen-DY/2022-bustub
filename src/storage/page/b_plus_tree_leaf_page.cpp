@@ -178,13 +178,42 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType &key, KeyComparator compar
   // int index = std::distance(array_, iter);
   int index = FindIndexByKey(key, comparator);
 
+  if (index >= GetSize()) {
+    return false;
+  }
+
   if (comparator(array_[index].first, key) == 0) {
+    // std::cout << "before:";
+    // for (int i = 0; i < GetSize(); i++) {
+    //   std::cout << array_[i].first << " ";
+    // }
+    // std::cout << std::endl;
+
+    // std::cout << array_[index].first << " " << key << " " << index << std::endl;
     // 三个参数，起始迭代器，结束迭代器，目标数组的起始迭代器
     std::move(array_ + index + 1, array_ + GetSize(), array_ + index);
     IncreaseSize(-1);
+
+    // std::cout << "after:";
+    // for (int i = 0; i < GetSize(); i++) {
+    //   std::cout << array_[i].first << " ";
+    // }
+    // std::cout << std::endl;
+
     return true;
   }
   return false;
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLeftOneStep() {
+  int size = GetSize();
+  for (int i = 0; i < size - 1; i++) {
+    array_[i].first = array_[i + 1].first;
+    array_[i].second = array_[i + 1].second;
+  }
+  IncreaseSize(-1);
+  // bpm->UnpinPage(page_id, true);
 }
 
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;

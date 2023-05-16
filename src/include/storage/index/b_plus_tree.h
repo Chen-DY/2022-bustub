@@ -64,8 +64,9 @@ class BPlusTree {
   // 增加辅助函数，查找叶子结点页
   auto FindLeave(const KeyType &key) const -> Page *;
 
-  auto FindLeaf(const KeyType &key, Operation operation, Transaction *transaction = nullptr) -> Page *;
-
+  // auto FindLeaf(const KeyType &key, Operation operation, Transaction *transaction = nullptr) -> Page *;
+  auto FindLeaf(const KeyType &key, Operation operation, Transaction *transaction = nullptr, bool leftMost = false,
+                bool rightMost = false) -> Page *;
   // 插入时没有根结点时调用
   auto StartNewTree(const KeyType &key, const ValueType &value) -> void;
 
@@ -74,7 +75,7 @@ class BPlusTree {
   auto InsertToParent(BPlusTreePage *page, BPlusTreePage *new_page, const KeyType &new_page_key,
                       Transaction *transaction = nullptr) -> void;
 
-  auto RedistributeOrMerge(BPlusTreePage *page, Transaction *transaction = nullptr) -> void;
+  auto RedistributeOrMerge(BPlusTreePage *page, Transaction *transaction = nullptr) -> bool;
 
   auto RedistributeLeft(BPlusTreePage *left_sibling_page, BPlusTreePage *cur_page, InternalPage *parent_page, int index)
       -> void;
@@ -82,7 +83,8 @@ class BPlusTree {
   auto RedistributeRight(BPlusTreePage *right_sibling_page, BPlusTreePage *cur_page, InternalPage *parent_page,
                          int index) -> void;
 
-  auto Merge(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent, int index, Transaction *transaction = nullptr) -> void;
+  auto Merge(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent, int index,
+             Transaction *transaction = nullptr) -> bool;
 
   // 在遇到子结点为安全的结点之后，释放transaction中的所有锁
   auto ReleaseLatchFromQueue(Transaction *transaction) -> void;
