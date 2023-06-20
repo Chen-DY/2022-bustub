@@ -451,7 +451,7 @@ auto BPLUSTREE_TYPE::RedistributeOrMerge(BPlusTreePage *cur_page, Transaction *t
     auto *left_sibling_page = reinterpret_cast<BPlusTreePage *>(left_page->GetData());
 
     if (left_sibling_page->GetSize() > left_sibling_page->GetMinSize()) {
-      std::cout << "11111111111111111111111"  << std::endl;
+      std::cout << "11111111111111111111111" << std::endl;
       RedistributeLeft(left_sibling_page, cur_page, parent_page, cur_page_index);
       ReleaseLatchFromQueue(transaction);
 
@@ -471,7 +471,7 @@ auto BPLUSTREE_TYPE::RedistributeOrMerge(BPlusTreePage *cur_page, Transaction *t
     right_page->WLatch();
     auto *right_sibling_page = reinterpret_cast<BPlusTreePage *>(right_page->GetData());
     if (right_sibling_page->GetSize() > right_sibling_page->GetMinSize()) {
-      std::cout << "2222222222222222222222"  << std::endl;
+      std::cout << "2222222222222222222222" << std::endl;
       RedistributeRight(right_sibling_page, cur_page, parent_page, cur_page_index);
       ReleaseLatchFromQueue(transaction);
       buffer_pool_manager_->UnpinPage(parent_page->GetPageId(), true);
@@ -490,7 +490,7 @@ auto BPLUSTREE_TYPE::RedistributeOrMerge(BPlusTreePage *cur_page, Transaction *t
     auto *left_sibling_page = reinterpret_cast<BPlusTreePage *>(left_page->GetData());
     // Merge(left_sibling_page, cur_page, parent_page, cur_page_index, transaction);
     auto parent_should_delete = Merge(left_sibling_page, cur_page, parent_page, cur_page_index, transaction);
-    std::cout << "3333333333333333333333333333"  << std::endl;
+    std::cout << "3333333333333333333333333333" << std::endl;
     if (parent_should_delete) {
       transaction->AddIntoDeletedPageSet(parent_page->GetPageId());
     }
@@ -507,7 +507,7 @@ auto BPLUSTREE_TYPE::RedistributeOrMerge(BPlusTreePage *cur_page, Transaction *t
     auto *right_sibling_page = reinterpret_cast<BPlusTreePage *>(right_page->GetData());
     auto parent_should_delete =
         Merge(cur_page, right_sibling_page, parent_page, cur_page_index + 1, transaction);  // NOLINT
-        std::cout << "44444444444444444444444444"  << std::endl;
+    std::cout << "44444444444444444444444444" << std::endl;
     // Merge(cur_page, right_sibling_page, parent_page, cur_page_index + 1, transaction);
     if (parent_should_delete) {
       transaction->AddIntoDeletedPageSet(parent_page->GetPageId());

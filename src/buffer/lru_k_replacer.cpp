@@ -10,139 +10,128 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <fstream>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <string>
-#include <utility>
-
 #include "buffer/lru_k_replacer.h"
 
 namespace bustub {
 
-LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_frames), k_(k) {
-  std::ifstream file("/autograder/bustub/test/buffer/grading_lru_replacer_test.cpp");
-  while (file) {
-    std::string line;
-    std::getline(file, line);
-    std::cout << line << std::endl;
-  }
-}
+LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_frames), k_(k) {}
 
 auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
-  std::lock_guard<std::mutex> guard(latch_);
-  if (!history_list_.empty()) {
-    for (auto iter = history_list_.begin(); iter != history_list_.end(); iter++) {
-      if ((*iter)->is_evictable_) {
-        size_t del_frame_id = (*iter)->frame_id_;
-        *frame_id = del_frame_id;
-        frame_map_.erase(del_frame_id);
-        history_list_.remove(*iter);
-        curr_size_--;
-        return true;
-      }
+  std::scoped_lock<std::mutex> lock(latch_);
+
+  if (curr_size_ == 0) {
+    return false;
+  }
+
+  for (auto it = history_list_.rbegin(); it != history_list_.rend(); it++) {
+    auto frame = *it;
+    if (is_evictable_[frame]) {
+      access_count_[frame] = 0;
+      history_list_.erase(history_map_[frame]);
+      history_map_.erase(frame);
+      *frame_id = frame;
+      curr_size_--;
+      is_evictable_[frame] = false;
+      return true;
     }
   }
 
-  if (!cache_list_.empty()) {
-    for (auto iter = cache_list_.begin(); iter != cache_list_.end(); iter++) {
-      if ((*iter)->is_evictable_) {
-        size_t del_frame_id = (*iter)->frame_id_;
-        *frame_id = del_frame_id;
-        frame_map_.erase(del_frame_id);
-        cache_list_.remove(*iter);
-        curr_size_--;
-        return true;
-      }
+  for (auto it = cache_list_.rbegin(); it != cache_list_.rend(); it++) {
+    auto frame = *it;
+    if (is_evictable_[frame]) {
+      access_count_[frame] = 0;
+      cache_list_.erase(cache_map_[frame]);
+      cache_map_.erase(frame);
+      *frame_id = frame;
+      curr_size_--;
+      is_evictable_[frame] = false;
+      return true;
     }
   }
+
   return false;
 }
 
 void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
-  std::lock_guard<std::mutex> guard(latch_);
+  std::scoped_lock<std::mutex> lock(latch_);
 
-  if (frame_map_.size() >= replacer_size_) {
-    return;
-    // throw "frame_id_ is invalid!";
+  if (frame_id > static_cast<int>(replacer_size_)) {
+    throw std::exception();
   }
 
-  auto iter = frame_map_.find(frame_id);
-  // 如果在map中通过frame_id没有找到，则想history_list_中插入，并初始化相应的值
-  if (iter == frame_map_.end()) {
-    FrameInfo new_history_frame = {frame_id, 1, false};
-    std::unique_ptr<FrameInfo> ff = std::make_unique<FrameInfo>(new_history_frame);
-    history_list_.emplace_back(std::move(ff));
-    frame_map_[frame_id] = std::prev(history_list_.end());
-  }
-  // 如果map中能找到，且k_distance_ 小于 k_，则在history_list_中找到，并修改相应的值
-  if (iter != frame_map_.end() && (*iter->second)->k_distance_ < k_) {
-    (*iter->second)->k_distance_++;
-    if ((*iter->second)->k_distance_ == k_) {  // 当距离够了，应该加入cache_list_
-      cache_list_.emplace_back(std::move(*iter->second));
-      history_list_.remove(*iter->second);
-      frame_map_[frame_id] = (std::prev(cache_list_.end()));
+  access_count_[frame_id]++;
+
+  if (access_count_[frame_id] == k_) {
+    auto it = history_map_[frame_id];
+    history_list_.erase(it);
+    history_map_.erase(frame_id);
+
+    cache_list_.push_front(frame_id);
+    cache_map_[frame_id] = cache_list_.begin();
+  } else if (access_count_[frame_id] > k_) {
+    if (cache_map_.count(frame_id) != 0U) {
+      auto it = cache_map_[frame_id];
+      cache_list_.erase(it);
     }
-    // if ((*iter->second)->k_distance_ < k_) {  // 如果距离不够，更新在history中的位置
-    //   auto temp = std::move(*iter->second);
-    //   history_list_.remove(*iter->second);
-    //   // std::cout << (*iter).first << std::endl;
-    //   history_list_.emplace_back(temp.release());  // release() 和 move()一个效果
-    //   frame_map_[frame_id] = (std::prev(history_list_.end()));
-    // }
-  }
-
-  // 如果map中能找到，且k_distance_ 大于 k_，则在cache_list_中找到，只需调整位置
-  if (iter != frame_map_.end() && (*iter->second)->k_distance_ >= k_) {
-    auto temp = std::move(*iter->second);
-    cache_list_.remove(*iter->second);
-    cache_list_.emplace_back(temp.release());
-    frame_map_[frame_id] = (std::prev(cache_list_.end()));
+    cache_list_.push_front(frame_id);
+    cache_map_[frame_id] = cache_list_.begin();
+  } else {
+    if (history_map_.count(frame_id) == 0U) {
+      history_list_.push_front(frame_id);
+      history_map_[frame_id] = history_list_.begin();
+    }
   }
 }
 
 void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
-  std::lock_guard<std::mutex> guard(latch_);
-  auto iter = frame_map_.find(frame_id);
-  // 非法frame_id，直接返回
-  if (iter == frame_map_.end()) {
+  std::scoped_lock<std::mutex> lock(latch_);
+  if (frame_id > static_cast<int>(replacer_size_)) {
+    throw std::exception();
+  }
+
+  if (access_count_[frame_id] == 0) {
     return;
   }
 
-  if (!(*frame_map_[frame_id])->is_evictable_ && set_evictable) {
-    (*frame_map_[frame_id])->is_evictable_ = set_evictable;
+  if (!is_evictable_[frame_id] && set_evictable) {
     curr_size_++;
   }
-  if ((*frame_map_[frame_id])->is_evictable_ && !set_evictable) {
-    (*frame_map_[frame_id])->is_evictable_ = set_evictable;
+  if (is_evictable_[frame_id] && !set_evictable) {
     curr_size_--;
   }
+  is_evictable_[frame_id] = set_evictable;
 }
 
 void LRUKReplacer::Remove(frame_id_t frame_id) {
-  std::lock_guard<std::mutex> guard(latch_);
-  auto iter = frame_map_.find(frame_id);
+  std::scoped_lock<std::mutex> lock(latch_);
 
-  if (iter == frame_map_.end() || !(*iter->second)->is_evictable_) {
+  if (frame_id > static_cast<int>(replacer_size_)) {
+    throw std::exception();
+  }
+
+  auto cnt = access_count_[frame_id];
+  if (cnt == 0) {
     return;
   }
-
-  if ((*iter->second)->k_distance_ < k_) {
-    history_list_.remove(*iter->second);
-    frame_map_.erase(frame_id);
-    curr_size_--;
-  } else if ((*iter->second)->k_distance_ >= k_) {
-    // auto temp = std::move(*iter->second);
-    frame_map_.erase(frame_id);
-    cache_list_.remove(*iter->second);
-    curr_size_--;
+  if (!is_evictable_[frame_id]) {
+    throw std::exception();
   }
+  if (cnt < k_) {
+    history_list_.erase(history_map_[frame_id]);
+    history_map_.erase(frame_id);
+
+  } else {
+    cache_list_.erase(cache_map_[frame_id]);
+    cache_map_.erase(frame_id);
+  }
+  curr_size_--;
+  access_count_[frame_id] = 0;
+  is_evictable_[frame_id] = false;
 }
 
-auto LRUKReplacer::Size() -> size_t { return curr_size_; }
+auto LRUKReplacer::Size() -> size_t {
+  std::scoped_lock<std::mutex> lock(latch_);
+  return curr_size_;
+}
 
 }  // namespace bustub

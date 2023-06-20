@@ -10,18 +10,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <algorithm>
 #include <cassert>
-#include <cstddef>
 #include <cstdlib>
 #include <functional>
 #include <list>
-#include <memory>
 #include <utility>
 
 #include "container/hash/extendible_hash_table.h"
 #include "storage/page/page.h"
-#include "storage/table/table_iterator.h"
 
 namespace bustub {
 
@@ -72,108 +68,78 @@ auto ExtendibleHashTable<K, V>::GetNumBucketsInternal() const -> int {
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Find(const K &key, V &value) -> bool {
-  std::lock_guard<std::mutex> guard(latch_);
-  std::shared_ptr<Bucket> find_bucket = dir_[IndexOf(key)];
-  return find_bucket->Find(key, value);
+  std::scoped_lock<std::mutex> lock(latch_);
+
+  auto index = IndexOf(key);
+  auto target_bucket = dir_[index];
+
+  return target_bucket->Find(key, value);
 }
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Remove(const K &key) -> bool {
-  std::lock_guard<std::mutex> guard(latch_);
-  std::shared_ptr<Bucket> find_bucket = dir_[IndexOf(key)];
-  return find_bucket->Remove(key);
+  std::scoped_lock<std::mutex> lock(latch_);
+
+  auto index = IndexOf(key);
+  auto target_bucket = dir_[index];
+
+  return target_bucket->Remove(key);
 }
 
-/**
- *
- * TODO(P1): Add implementation
- *
- * @brief Insert the given key-value pair into the hash table.
- * If a key already exists, the value should be updated.
- * If the bucket is full and can't be inserted, do the following steps before retrying:
- *    1. If the local depth of the bucket is equal to the global depth,
- *        increment the global depth and double the size of the directory.
- *    2. Increment the local depth of the bucket.
- *    3. Split the bucket and redistribute directory pointers & the kv pairs in the bucket.
- *
- * @param key The key to be inserted.
- * @param value The value to be inserted.
- */
 template <typename K, typename V>
 void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
-  std::lock_guard<std::mutex> guard(latch_);
-  // 循环的目的是，防止桶分裂后，某个桶依旧为满的情况
+  std::scoped_lock<std::mutex> lock(latch_);
+
   while (dir_[IndexOf(key)]->IsFull()) {
-    size_t dir_index = IndexOf(key);
-    std::shared_ptr<Bucket> old_bucket = dir_[dir_index];
+    auto index = IndexOf(key);
+    auto target_bucket = dir_[index];
 
-    // 1. If the local depth of the bucket is equal to the global depth,
-    //        increment the global depth and double the size of the directory.
-    if (GetGlobalDepthInternal() == old_bucket->GetDepth()) {
-      // global_depth_++;
-      // // 将目录项翻倍
-      // size_t dir_nums = dir_.size();
-      // dir_.resize(dir_nums << 1);
+    if (target_bucket->GetDepth() == GetGlobalDepthInternal()) {
       global_depth_++;
-      size_t capacity = dir_.size() << 1;
-      dir_.resize(capacity);
-      // 将扩容出来的目录项暂时指向旧桶
-      for (size_t i = capacity / 2; i < dir_.size(); i++) {
-        dir_[i] = dir_[i - capacity / 2];
+      int capacity = dir_.size();
+      dir_.resize(capacity << 1);
+      for (int i = 0; i < capacity; i++) {
+        dir_[i + capacity] = dir_[i];
       }
     }
 
-    // 2. Increment the local depth of the bucket.
-    // old_bucket->IncrementDepth();
+    int mask = 1 << target_bucket->GetDepth();
+    auto bucket_0 = std::make_shared<Bucket>(bucket_size_, target_bucket->GetDepth() + 1);
+    auto bucket_1 = std::make_shared<Bucket>(bucket_size_, target_bucket->GetDepth() + 1);
 
-    // 现在的掩码
-    // size_t mask = (1 << global_depth_) - 1;
-
-    // // 3.分裂桶
-    // std::shared_ptr<Bucket> new_bucket = std::make_shared<Bucket>(bucket_size_, GetLocalDepthInternal(dir_index));
-    // size_t new_dir_index = (0x1 << (global_depth_ - 1)) ^ dir_index;
-    // // 3.1 遍历原桶中所有项，然后判断是否应该加入分裂出来的桶
-    // std::list<std::pair<K, V>> item = old_bucket->GetItems();
-    // typename std::list<std::pair<K,V>>::iterator iter;
-    // for (iter = item.begin(); iter != item.end(); ++iter) {
-    //     if ((std::hash<K>()(iter->first) & mask) == (new_dir_index & mask)){
-    //       // std::cout << iter->first << std::endl;
-    //       old_bucket->Remove(iter->first);
-    //       // std::cout << old_bucket->Find(iter->first, iter->second) << "1111" << std::endl;
-    //       new_bucket->Insert(iter->first, iter->second);
-    //       // std::cout << new_bucket->Find(iter->first, iter->second) << "2222" <<std::endl;
-    //     }
-    // }
-
-    int mask = 1 << GetLocalDepthInternal(dir_index);
-    // 逻辑上是要把一部分元素移除旧桶,实际操作上是开两个新桶
-    auto zero_bucket = std::make_shared<Bucket>(bucket_size_, GetLocalDepthInternal(dir_index) + 1);
-    auto one_bucket = std::make_shared<Bucket>(bucket_size_, GetLocalDepthInternal(dir_index) + 1);
-    for (auto &[k, v] : old_bucket->GetItems()) {
-      size_t hash_key = std::hash<K>()(k);
-      if ((hash_key & mask) == 0U) {  // ==0U是clion给我加的hhh
-        zero_bucket->Insert(k, v);
+    for (const auto &item : target_bucket->GetItems()) {
+      size_t hash_key = std::hash<K>()(item.first);
+      if ((hash_key & mask) != 0U) {
+        bucket_1->Insert(item.first, item.second);
       } else {
-        one_bucket->Insert(k, v);
+        bucket_0->Insert(item.first, item.second);
       }
     }
+
     num_buckets_++;
 
-    // 重置目录指针
-    // mask = 1 << (global_depth_ - 1);
     for (size_t i = 0; i < dir_.size(); i++) {
-      if (dir_[i] == old_bucket) {
-        if ((i & mask) == 0U) {
-          dir_[i] = zero_bucket;
-          // dir_[i] = old_bucket;
+      if (dir_[i] == target_bucket) {
+        if ((i & mask) != 0U) {
+          dir_[i] = bucket_1;
         } else {
-          // dir_[i] = new_bucket;
-          dir_[i] = one_bucket;
+          dir_[i] = bucket_0;
         }
       }
     }
   }
-  dir_[IndexOf(key)]->Insert(key, value);
+
+  auto index = IndexOf(key);
+  auto target_bucket = dir_[index];
+
+  for (auto &item : target_bucket->GetItems()) {
+    if (item.first == key) {
+      item.second = value;
+      return;
+    }
+  }
+
+  target_bucket->Insert(key, value);
 }
 
 //===--------------------------------------------------------------------===//
@@ -184,19 +150,9 @@ ExtendibleHashTable<K, V>::Bucket::Bucket(size_t array_size, int depth) : size_(
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Find(const K &key, V &value) -> bool {
-  // // // 第一种
-  // typename std::list<std::pair<K,V>>::iterator iter;
-  // for (iter = list_.begin(); iter != list_.end(); ++iter) {
-  //   if (iter->first == key) {
-  //     value = iter->second;
-  //     return true;
-  //   }
-  // }
-  // return false;
-  // 第二种
-  return std::any_of(list_.begin(), list_.end(), [&](std::pair<K, V> p) {
-    if (p.first == key) {
-      value = p.second;
+  return std::any_of(list_.begin(), list_.end(), [&key, &value](const auto &item) {
+    if (item.first == key) {
+      value = item.second;
       return true;
     }
     return false;
@@ -205,11 +161,9 @@ auto ExtendibleHashTable<K, V>::Bucket::Find(const K &key, V &value) -> bool {
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Remove(const K &key) -> bool {
-  typename std::list<std::pair<K, V>>::iterator iter;
-  return std::any_of(list_.begin(), list_.end(), [&](std::pair<K, V> p) {
-    if (p.first == key) {
-      list_.remove(p);
-      // std::cout << this->Find(p.first, p.second) << std::endl;
+  return std::any_of(list_.begin(), list_.end(), [&key, this](const auto &item) {
+    if (item.first == key) {
+      this->list_.remove(item);
       return true;
     }
     return false;
@@ -218,21 +172,10 @@ auto ExtendibleHashTable<K, V>::Bucket::Remove(const K &key) -> bool {
 
 template <typename K, typename V>
 auto ExtendibleHashTable<K, V>::Bucket::Insert(const K &key, const V &value) -> bool {
-  // 如果桶满了，则返回
   if (IsFull()) {
     return false;
   }
-  // 桶中有相同的key，更新value
-  typename std::list<std::pair<K, V>>::iterator iter;
-  for (iter = list_.begin(); iter != list_.end(); ++iter) {
-    if (iter->first == key) {
-      iter->second = value;
-      return true;
-    }
-  }
-  // 添加键值对
-  list_.emplace_back(std::make_pair(key, value));
-  // size_++;
+  list_.emplace_back(key, value);
   return true;
 }
 

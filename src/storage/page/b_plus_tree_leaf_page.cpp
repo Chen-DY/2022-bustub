@@ -178,7 +178,7 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType &key, KeyComparator compar
   // int index = std::distance(array_, iter);
   int index = FindIndexByKey(key, comparator);
 
-  if (index >= GetSize()) {
+  if (index < 0 || index >= GetSize()) {
     return false;
   }
 
