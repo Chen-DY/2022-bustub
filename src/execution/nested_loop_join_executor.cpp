@@ -45,6 +45,7 @@ auto NestedLoopJoinExecutor::Next(Tuple *tuple, RID *rid) -> bool {
   RID emit_rid{};
   // Tuple left_tuple;
   while (right_tuples_idx_ >= 0 || left_executor_->Next(&left_tuple_, &emit_rid)) {
+    // LOG_DEBUG("left tuple: %s", left_tuple_.ToString(&left_executor_->GetOutputSchema()).c_str());
     std::vector<Value> val;
     for (uint32_t idx = (right_tuples_idx_ < 0 ? 0 : right_tuples_idx_); idx < right_tuples_.size(); idx++) {
       auto &right_tuple = right_tuples_[idx];
